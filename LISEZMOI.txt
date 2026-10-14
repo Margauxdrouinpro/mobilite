@@ -1,0 +1,23 @@
+MOBILITÉ — mise en ligne en 5 minutes (GitHub Pages, gratuit)
+
+1. Crée un compte sur https://github.com (bouton « Sign up »).
+2. En haut à droite : « + » → « New repository ».
+   - Repository name : mobilite
+   - Public (coché)
+   - Clique « Create repository ».
+3. Sur la page du dépôt vide : « uploading an existing file ».
+   Glisse TOUS les fichiers de ce dossier (pas le dossier lui-même) :
+   index.html, sw.js, manifest.webmanifest, les 4 .png
+   Puis « Commit changes ».
+4. Onglet « Settings » → menu de gauche « Pages ».
+   Source : « Deploy from a branch » · Branch : main · dossier : / (root) → « Save ».
+5. Attends 1 à 2 minutes. L'adresse de ton app s'affiche en haut de cette page :
+   https://TON-PSEUDO.github.io/mobilite/
+
+INSTALLER SUR ANDROID
+- Ouvre l'adresse dans Chrome.
+- Menu ⋮ → « Installer l'application » (ou « Ajouter à l'écran d'accueil »).
+- L'icône apparaît sur ton écran d'accueil. L'app marche ensuite hors connexion.
+
+METTRE À JOUR PLUS TARD
+- Remplace les fichiers dans le dépôt GitHub (même procédure que l'étape 3).

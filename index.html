@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mobilité</title>
+<meta name="description" content="Routines de mobilité pour nageuse : minuteur guidé, historique, exercices modifiables.">
+<meta name="theme-color" content="#0A6A84" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#06191F" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mobilité">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Big+Shoulders+Display:wght@600;800&display=swap">
+<style>
+/* Layout : app téléphone, une colonne, barre de navigation en bas. Horloge de bassin + bonhomme animé dans le lecteur. */
+:root{
+  --bg:#ECF4F3;--tile:rgba(10,106,132,.06);--surface:#FFFFFF;--ink:#0F2930;--muted:#566F75;--line:#C9DBDB;
+  --accent:#0A6A84;--accent-ink:#FFFFFF;--accent-soft:#DCEDF0;--hand:#D4432A;--done:#2A8664;--danger:#B7321E;
+  --display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --radius:18px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#06191F;--tile:rgba(79,182,207,.05);--surface:#0C252D;--ink:#E2F0F0;--muted:#8AA6AB;--line:#1D3B44;
+    --accent:#4DB4CD;--accent-ink:#04161B;--accent-soft:#12343D;--hand:#FF6B4E;--done:#56C296;--danger:#FF7A66;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background-color:var(--bg);
+  background-image:linear-gradient(var(--tile) 1px,transparent 1px),linear-gradient(90deg,var(--tile) 1px,transparent 1px);background-size:28px 28px;
+  color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+.view{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(96px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(38px,11vw,60px);line-height:.92;text-transform:uppercase;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.05;text-transform:uppercase;letter-spacing:.02em;margin:0}
+h3{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.05;text-transform:uppercase;margin:0}
+p{margin:0}
+.muted{color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:22px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600;text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{min-height:56px;padding:0 28px;border-radius:28px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:default}
+.icon{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;padding:0;flex:none}
+.icon svg{width:20px;height:20px}
+.icon.sm{width:36px;height:36px}.icon.sm svg{width:16px;height:16px}
+.icon:disabled{opacity:.35;cursor:default}
+:is(button,a,input,select,textarea,[tabindex]):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;white-space:nowrap}
+.chip.hot{background:var(--hand);color:#fff}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100vw - 32px);text-align:center;z-index:30}
+.toast.on{opacity:1}
+
+/* Barre de navigation */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px 8px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:600}
+.nav a svg{width:24px;height:24px}
+.nav a.on{color:var(--accent)}
+
+/* Accueil */
+.hero{display:flex;flex-direction:column;gap:10px}
+.streak{display:flex;gap:10px;align-items:stretch}
+.stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0}
+.stat b{display:block;font-family:var(--display);font-weight:800;font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.week{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.day{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--muted);background:var(--surface)}
+.day.today{border-color:var(--accent);color:var(--accent)}
+.day.on{background:var(--done);border-color:var(--done);color:#fff}
+.rlist{display:flex;flex-direction:column;gap:12px}
+.rcard{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius)}
+.rcard.done{border-color:var(--done)}
+.rcard h3{font-size:24px}
+.rcard .meta{font-size:14px;color:var(--muted);margin-top:2px}
+.rcard .acts{display:flex;flex-direction:column;gap:8px;align-items:center}
+.strip{display:flex;gap:4px;margin-top:10px}
+.strip i{height:6px;flex:1;border-radius:3px;background:var(--accent-soft)}
+.strip i.a{background:var(--accent)}
+
+/* Lecteur */
+.player{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:grid;gap:18px}
+@media (min-width:640px){.player{grid-template-columns:auto minmax(0,1fr);align-items:start;padding:24px;gap:28px}}
+.dial-col{display:flex;flex-direction:column;align-items:center;gap:14px}
+.clock{--cw:min(64vw,260px);width:var(--cw);max-width:100%;aspect-ratio:1;position:relative}
+.clock svg{width:100%;height:100%;display:block}
+.face{fill:var(--bg)}.rim{fill:none;stroke:var(--line);stroke-width:2}
+.tick{stroke:var(--muted);stroke-width:1.2;stroke-linecap:round}.tick.major{stroke:var(--ink);stroke-width:2.4}
+.num{fill:var(--ink);font-family:var(--display);font-weight:600;font-size:13px}
+.hand{stroke:var(--hand);stroke-width:3;stroke-linecap:round}
+.track{fill:none;stroke:var(--line);stroke-width:6}
+.prog{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round}.prog.prep{stroke:var(--muted)}
+.disc{fill:var(--surface)}
+.readout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.r-label{font-size:max(10px,calc(var(--cw)*.042));font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.r-time{font-family:var(--display);font-weight:800;font-size:calc(var(--cw)*.2);line-height:1;font-variant-numeric:tabular-nums}
+.r-side{font-size:max(11px,calc(var(--cw)*.046));font-weight:600;color:var(--accent);min-height:1.35em}
+.r-side.flash{color:var(--hand)}
+.controls{display:flex;align-items:center;justify-content:center;gap:12px}
+.now{display:flex;flex-direction:column;gap:8px;min-width:0}
+.now h2{font-size:clamp(28px,7.5vw,38px)}
+.reps{color:var(--accent);font-weight:600}
+.cues{margin:4px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.cues li{position:relative;padding-left:18px}
+.cues li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.demo{width:100%;max-width:360px;aspect-ratio:200/130;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.demo svg{width:100%;height:100%;display:block;color:var(--ink)}
+.demo.sm{max-width:120px;border-radius:10px}
+.lane{position:relative;display:flex;gap:5px;align-items:center;padding:4px 0}
+.lane::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--line);transform:translateY(-50%)}
+.bead{position:relative;flex:1;height:14px;border-radius:7px;background:var(--surface);border:1.5px solid var(--line)}
+.bead.done{background:var(--accent);border-color:var(--accent)}.bead.cur{border:2.5px solid var(--hand)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.step{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.step:first-child{border-top:0}.step.cur{background:var(--accent-soft)}
+.step-main{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.step-main:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.step-title{font-weight:600;display:flex;gap:8px;align-items:baseline}
+.idx{font-family:var(--display);font-weight:800;font-size:15px;color:var(--muted);min-width:1.1em;font-variant-numeric:tabular-nums}
+.step-meta{font-size:14px;color:var(--muted);padding-left:calc(1.1em + 8px)}
+.step.done .step-title span:last-child{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.dur{font-family:var(--display);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.check{position:relative;display:grid;place-items:center;width:30px;height:30px;cursor:pointer}
+.check input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.box{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.box svg{width:16px;height:16px;opacity:0}.box path{stroke:#fff}
+.check input:checked + .box{background:var(--done);border-color:var(--done)}
+.check input:checked + .box svg{opacity:1}
+.check input:focus-visible + .box{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Historique */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (min-width:520px){.tiles{grid-template-columns:repeat(4,1fr)}}
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-grid .h{font-size:11px;font-weight:700;color:var(--muted);text-align:center;text-transform:uppercase}
+.cal-grid button{aspect-ratio:1;border-radius:50%;border:1.5px solid transparent;background:transparent;display:grid;place-items:center;font-size:14px;font-variant-numeric:tabular-nums;cursor:pointer;padding:0;position:relative}
+.cal-grid button.on{background:var(--done);color:#fff}
+.cal-grid button.today{border-color:var(--accent)}
+.cal-grid button.sel{outline:3px solid var(--accent);outline-offset:-1px}
+.cal-grid button.off{opacity:.3}
+.sess{display:flex;flex-direction:column;gap:8px}
+.sess .card{padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+/* Éditeur */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--muted)}
+.in{width:100%;min-height:44px;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface)}
+textarea.in{min-height:90px;resize:vertical;line-height:1.4}
+.ecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:12px}
+.ecard .head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.ecard .head .idx{font-size:20px}
+.ecard summary{cursor:pointer;list-style:none;font-weight:600;color:var(--accent);font-size:14px}
+.ecard summary::-webkit-details-marker{display:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper input{width:70px;text-align:center}
+.toggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;min-height:44px}
+.toggle input{position:absolute;opacity:0;width:0;height:0}
+.toggle .tk{width:44px;height:26px;border-radius:13px;background:var(--line);position:relative;transition:background .15s;flex:none}
+.toggle .tk::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle input:checked + .tk{background:var(--accent)}.toggle input:checked + .tk::after{transform:translateX(18px)}
+.toggle input:focus-visible + .tk{outline:3px solid var(--accent);outline-offset:2px}
+.animpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.animpick button{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}
+.animpick button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.animpick .demo{max-width:none;border-radius:8px}
+.lib{display:flex;flex-direction:column;gap:8px}
+.lib button{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:8px 10px;cursor:pointer}
+.lib button .demo{max-width:72px;border-radius:8px}
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(6,25,31,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{background:var(--bg);width:100%;max-width:720px;max-height:85vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+
+/* Animations des bonshommes */
+.fig line,.fig path,.fig polyline{stroke:currentColor;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.fig circle.head{fill:currentColor}
+.prop{fill:var(--accent-soft);stroke:none}
+.prop-line{stroke:var(--line);stroke-width:3;stroke-linecap:round}
+.ball{fill:var(--hand)}
+.roller{fill:var(--accent);opacity:.75}
+.floor{stroke:var(--line);stroke-width:2}
+.an{animation-duration:4s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+.an-openbook{animation-name:openbook;transform-origin:65px 70px}
+.an-needle{animation-name:needle;transform-origin:135px 68px;animation-duration:5s}
+.an-foamext{animation-name:foamext;transform-origin:95px 92px}
+.an-doorpec{animation-name:doorpec;transform-origin:93px 48px;animation-duration:5s}
+.an-armL{animation-name:armL;transform-origin:88px 52px}
+.an-armR{animation-name:armR;transform-origin:112px 52px}
+.an-raise{animation-name:raise;transform-origin:124px 50px}
+.an-rotback{animation-name:rotback;transform-origin:76px 50px;animation-duration:3s}
+.an-roll{animation-name:roll;animation-duration:5s}
+.an-spin{animation-name:spin;animation-duration:5s;transform-origin:center;transform-box:fill-box}
+.an-bob{animation-name:bob;animation-duration:3s}
+.an-circle{animation-name:circle;transform-origin:124px 50px;animation-duration:3s;animation-timing-function:linear}
+.an-catcow{animation-name:catcow;transform-origin:100px 65px}
+@keyframes openbook{0%,8%{transform:rotate(0)}40%,55%{transform:rotate(-180deg)}92%,100%{transform:rotate(0)}}
+@keyframes needle{0%,5%{transform:rotate(0)}28%,42%{transform:rotate(55deg)}70%,82%{transform:rotate(-170deg)}100%{transform:rotate(0)}}
+@keyframes foamext{0%,10%{transform:rotate(0)}45%,60%{transform:rotate(32deg)}95%,100%{transform:rotate(0)}}
+@keyframes doorpec{0%,10%{transform:rotate(0)}50%,65%{transform:rotate(-16deg)}100%{transform:rotate(0)}}
+@keyframes armL{0%,8%{transform:rotate(0)}45%,58%{transform:rotate(62deg)}95%,100%{transform:rotate(0)}}
+@keyframes armR{0%,8%{transform:rotate(0)}45%,58%{transform:rotate(-62deg)}95%,100%{transform:rotate(0)}}
+@keyframes raise{0%,10%{transform:rotate(0)}50%,60%{transform:rotate(-75deg)}100%{transform:rotate(0)}}
+@keyframes rotback{0%{transform:rotate(-30deg)}50%{transform:rotate(30deg)}100%{transform:rotate(-30deg)}}
+@keyframes roll{0%{transform:translateX(0)}25%{transform:translateX(-12px)}75%{transform:translateX(12px)}100%{transform:translateX(0)}}
+@keyframes spin{0%{transform:rotate(0)}25%{transform:rotate(-70deg)}75%{transform:rotate(70deg)}100%{transform:rotate(0)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+@keyframes circle{0%{transform:rotate(0)}100%{transform:rotate(-360deg)}}
+@keyframes catcow{0%,100%{transform:scaleY(1)}50%{transform:scaleY(-1)}}
+@media (prefers-reduced-motion: reduce){.an{animation-duration:16s}}
+</style>
+</head>
+<body>
+
+<main id="app"></main>
+
+<nav class="nav" aria-label="Navigation">
+  <div class="nav-in">
+    <a href="#home" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Routines</a>
+    <a href="#history" data-nav="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Historique</a>
+    <a href="#settings" data-nav="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Réglages</a>
+  </div>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var VERSION = '1.0.0';
+
+/* ============ Animations (bonshommes) ============ */
+var FIG = {
+  openbook: {label:'Livre ouvert', svg:
+    '<rect class="prop" x="0" y="0" width="200" height="130"/>' +
+    '<g class="fig"><circle class="head" cx="40" cy="70" r="10"/><line x1="52" y1="70" x2="110" y2="70"/><polyline points="110,70 132,100 162,100"/>' +
+    '<line x1="65" y1="70" x2="65" y2="112"/><line class="an an-openbook" x1="65" y1="70" x2="65" y2="112"/></g>'},
+  needle: {label:'Enfiler l’aiguille', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/>' +
+    '<g class="fig"><circle class="head" cx="152" cy="58" r="10"/><line x1="142" y1="64" x2="72" y2="66"/><polyline points="72,66 72,118 30,118"/>' +
+    '<line x1="135" y1="68" x2="140" y2="118"/><line class="an an-needle" x1="135" y1="68" x2="135" y2="118"/></g>'},
+  foamext: {label:'Extension rouleau', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><circle class="roller" cx="100" cy="106" r="14"/>' +
+    '<g class="fig"><polyline points="22,118 38,92 58,116"/><line x1="58" y1="116" x2="95" y2="92"/>' +
+    '<g class="an an-foamext"><line x1="95" y1="92" x2="140" y2="70"/><circle class="head" cx="150" cy="64" r="10"/><polyline points="128,76 122,60 140,56"/></g></g>'},
+  doorpec: {label:'Pectoraux à la porte', svg:
+    '<rect class="prop" x="0" y="0" width="200" height="130"/><rect class="prop-line" x="92" y="0" width="4" height="40" fill="var(--line)"/><rect x="92" y="96" width="4" height="40" fill="var(--line)"/>' +
+    '<g class="fig"><polyline points="93,20 93,48 70,48"/>' +
+    '<g class="an an-doorpec"><line x1="70" y1="48" x2="70" y2="92"/><circle class="head" cx="70" cy="70" r="10"/><line x1="70" y1="92" x2="88" y2="104"/></g></g>'},
+  wallslide: {label:'Glissés au mur', svg:
+    '<rect class="prop" x="0" y="0" width="200" height="130"/><line class="floor" x1="0" y1="121" x2="200" y2="121"/>' +
+    '<g class="fig"><circle class="head" cx="100" cy="30" r="11"/><line x1="100" y1="42" x2="100" y2="90"/><polyline points="85,120 100,90 115,120"/><line x1="88" y1="52" x2="112" y2="52"/>' +
+    '<g class="an an-armL"><polyline points="88,52 68,62 68,32"/></g><g class="an an-armR"><polyline points="112,52 132,62 132,32"/></g></g>'},
+  ballpec: {label:'Balle pectoraux', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><rect class="prop" x="150" y="0" width="50" height="130"/><line class="prop-line" x1="150" y1="0" x2="150" y2="130"/>' +
+    '<g class="fig an an-bob"><circle class="head" cx="118" cy="30" r="10"/><line x1="122" y1="42" x2="128" y2="95"/><polyline points="118,120 128,95 142,120"/><circle class="ball" cx="143" cy="52" r="6"/>' +
+    '<line class="an an-raise" x1="124" y1="50" x2="124" y2="95"/></g>'},
+  ballback: {label:'Balle arrière épaule', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><rect class="prop" x="0" y="0" width="50" height="130"/><line class="prop-line" x1="50" y1="0" x2="50" y2="130"/>' +
+    '<g class="fig"><circle class="head" cx="82" cy="30" r="10"/><line x1="78" y1="42" x2="72" y2="95"/><polyline points="58,120 72,95 86,120"/><circle class="ball" cx="57" cy="56" r="6"/>' +
+    '<polyline class="an an-rotback" points="76,50 96,66 96,90"/></g>'},
+  trap: {label:'Balle trapèzes', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><rect class="prop" x="0" y="0" width="50" height="130"/><line class="prop-line" x1="50" y1="0" x2="50" y2="130"/>' +
+    '<g class="fig an an-bob"><circle class="head" cx="82" cy="30" r="10"/><line x1="78" y1="42" x2="72" y2="95"/><polyline points="58,120 72,95 86,120"/><line x1="76" y1="50" x2="80" y2="95"/><circle class="ball" cx="57" cy="42" r="6"/></g>'},
+  rollerlat: {label:'Rouleau grand dorsal', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><g class="an an-spin"><circle class="roller" cx="62" cy="106" r="14"/><line x1="62" y1="94" x2="62" y2="118" stroke="var(--bg)" stroke-width="2"/></g>' +
+    '<g class="fig an an-roll"><line x1="62" y1="92" x2="8" y2="98"/><circle class="head" cx="38" cy="80" r="10"/><line x1="62" y1="92" x2="130" y2="100"/><polyline points="130,100 165,112 190,116"/></g>'},
+  rollerupper: {label:'Rouleau haut du dos', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/><g class="an an-spin"><circle class="roller" cx="100" cy="106" r="14"/><line x1="100" y1="94" x2="100" y2="118" stroke="var(--bg)" stroke-width="2"/></g>' +
+    '<g class="fig an an-roll"><polyline points="24,120 42,94 62,116"/><line x1="62" y1="116" x2="116" y2="88"/><circle class="head" cx="130" cy="78" r="10"/><polyline points="112,90 118,70 134,66"/></g>'},
+  armcircles: {label:'Cercles de bras', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/>' +
+    '<g class="fig"><circle class="head" cx="118" cy="30" r="10"/><line x1="122" y1="42" x2="126" y2="95"/><polyline points="114,120 126,95 140,120"/><line x1="124" y1="50" x2="118" y2="94"/>' +
+    '<line class="an an-circle" x1="124" y1="50" x2="124" y2="96"/></g>'},
+  catcow: {label:'Chat-vache', svg:
+    '<line class="floor" x1="0" y1="121" x2="200" y2="121"/>' +
+    '<g class="fig"><circle class="head" cx="152" cy="58" r="10"/><polyline points="72,66 72,118 30,118"/><line x1="135" y1="68" x2="140" y2="118"/>' +
+    '<path class="an an-catcow" d="M142 64 Q100 50 72 66"/></g>'},
+  none: {label:'Sans visuel', svg:'<text x="100" y="70" text-anchor="middle" fill="currentColor" font-size="14" font-family="sans-serif" opacity=".6">Sans visuel</text>'}
+};
+function demoSVG(id){
+  var f = FIG[id] || FIG.none;
+  return '<svg viewBox="0 0 200 130" aria-hidden="true">' + f.svg + '</svg>';
+}
+
+/* ============ Bibliothèque d’exercices ============ */
+var LIB = [
+  {name:'Pectoraux', tool:'Balle', sec:90, sides:true, reps:'45 s par côté', anim:'ballpec', cues:['Balle sous la clavicule, côté épaule, contre le mur.','Petits roulements, puis lève et baisse le bras sur un point sensible.','Évite le creux de l’aisselle.']},
+  {name:'Grand dorsal', tool:'Rouleau', sec:90, sides:true, reps:'45 s par côté', anim:'rollerlat', cues:['Allongée sur le côté, bras tendu au-dessus de la tête.','Roule lentement de l’aisselle jusqu’au bas des côtes.']},
+  {name:'Arrière de l’épaule', tool:'Balle', sec:90, sides:true, reps:'45 s par côté', anim:'ballback', cues:['Dos au mur, balle sur l’omoplate, côté extérieur.','Sur un point sensible, fais de petites rotations du bras.']},
+  {name:'Haut des trapèzes', tool:'Balle', sec:60, sides:true, reps:'30 s par côté', anim:'trap', cues:['Balle entre le cou et l’épaule, contre le mur ou allongée.','Pression douce : la zone réagit vite.']},
+  {name:'Haut du dos', tool:'Rouleau', sec:60, sides:false, reps:'1 min', anim:'rollerupper', cues:['Mains derrière la tête, rouleau sous le bas des omoplates.','Roule lentement jusqu’aux épaules.','Ne descends pas sur les lombaires.']},
+  {name:'Livre ouvert', tool:'Sol', sec:120, sides:true, reps:'8 à 10 par côté', anim:'openbook', cues:['Sur le côté, genoux pliés à 90° et collés au sol.','Ouvre le bras du dessus, le regard suit la main.','Expire en fin d’ouverture, pause de 2 à 3 s.']},
+  {name:'Enfiler l’aiguille', tool:'Sol', sec:90, sides:true, reps:'8 par côté', anim:'needle', cues:['À quatre pattes, glisse un bras sous le corps.','Puis ouvre-le vers le plafond en tournant le buste.','Le bassin reste au-dessus des genoux.']},
+  {name:'Extension sur rouleau', tool:'Rouleau', sec:90, sides:false, reps:'3 niveaux × 5', anim:'foamext', cues:['Rouleau sous le haut du dos, mains derrière la tête, coudes serrés.','Pars en arrière sans cambrer le bas du dos.','5 fois, puis décale le rouleau d’un cran.']},
+  {name:'Pectoraux à la porte', tool:'Porte', sec:120, sides:true, reps:'2 × 30 s par côté', anim:'doorpec', cues:['Avant-bras contre le montant, coude à hauteur d’épaule.','Avance doucement le buste pendant 30 s.','Monte le coude plus haut pour les 30 s suivantes.']},
+  {name:'Glissés au mur', tool:'Mur', sec:60, sides:false, reps:'10 lentes', anim:'wallslide', cues:['Dos et avant-bras contre le mur.','Fais glisser les bras vers le haut sans hausser les épaules.','Redescends lentement.']},
+  {name:'Cercles de bras', tool:'Debout', sec:60, sides:true, reps:'10 avant, 10 arrière', anim:'armcircles', cues:['Bras tendu, grands cercles lents.','Épaule basse, le cercle vient de l’omoplate.']},
+  {name:'Chat-vache', tool:'Sol', sec:60, sides:false, reps:'8 cycles', anim:'catcow', cues:['À quatre pattes, arrondis le dos en expirant.','Creuse en inspirant, le regard devant.']}
+];
+function pick(name){ var l = LIB.filter(function(x){ return x.name === name; })[0]; return JSON.parse(JSON.stringify(l)); }
+function uid(){ return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+function withIds(steps){ return steps.map(function(s){ s.id = s.id || uid(); return s; }); }
+function defaultRoutines(){
+  return [
+    {id:'matin', name:'Matin · épaules', note:'Détendre puis ouvrir. La routine du rappel de 7h30.',
+      steps: withIds([pick('Pectoraux'), pick('Grand dorsal'), pick('Arrière de l’épaule'), pick('Haut des trapèzes'), pick('Haut du dos'),
+        pick('Livre ouvert'), pick('Enfiler l’aiguille'), pick('Extension sur rouleau'), pick('Pectoraux à la porte'), pick('Glissés au mur')])},
+    {id:'avant', name:'Avant la nage', note:'Cinq minutes au bord du bassin, sans matériel.',
+      steps: withIds([Object.assign(pick('Livre ouvert'), {sec:90}), Object.assign(pick('Enfiler l’aiguille'), {sec:60}), pick('Cercles de bras'), pick('Chat-vache'), pick('Glissés au mur')])},
+    {id:'apres', name:'Après la nage', note:'Relâcher ce qui a tiré.',
+      steps: withIds([pick('Grand dorsal'), pick('Extension sur rouleau'), pick('Pectoraux à la porte'), pick('Haut du dos')])}
+  ];
+}
+
+/* ============ Données ============ */
+var KEY = 'mobilite-app-v1';
+var DB = load();
+function load(){
+  var d = null;
+  try { d = JSON.parse(localStorage.getItem(KEY)); } catch(e){ d = null; }
+  if (!d || !Array.isArray(d.routines)){
+    d = {routines: defaultRoutines(), sessions: [], settings: {prep: 8, sound: true, vibrate: true}, progress: {}};
+  }
+  d.sessions = d.sessions || []; d.settings = Object.assign({prep: 8, sound: true, vibrate: true}, d.settings || {}); d.progress = d.progress || {};
+  return d;
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch(e){ toast('Impossible d’enregistrer sur ce téléphone'); } }
+function routine(id){ return DB.routines.filter(function(r){ return r.id === id; })[0]; }
+function isoLocal(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function today(){ return isoLocal(new Date()); }
+function fmt(s){ s = Math.max(0, Math.ceil(s - 1e-6)); var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+function fmtLong(s){ var m = Math.floor(s / 60), r = s % 60; if (!m) return r + ' s'; return m + ' min' + (r ? ' ' + (r < 10 ? '0' : '') + r : ''); }
+function routineSec(r){ return r.steps.reduce(function(a, s){ return a + s.sec + DB.settings.prep; }, 0); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function daysDone(){ var m = {}; DB.sessions.forEach(function(s){ m[s.date] = (m[s.date] || 0) + 1; }); return m; }
+function doneToday(rid){ var t = today(); return DB.sessions.some(function(s){ return s.date === t && (!rid || s.routine === rid); }); }
+function streaks(){
+  var m = daysDone(), cur = 0, best = 0, run = 0, d = new Date(), t = today();
+  if (!m[t]) d.setDate(d.getDate() - 1);
+  for (var k = 0; k < 400; k++){ if (m[isoLocal(d)]) cur++; else break; d.setDate(d.getDate() - 1); }
+  var days = Object.keys(m).sort(), prev = null;
+  days.forEach(function(ds){
+    var p = ds.split('-'), dt = new Date(+p[0], +p[1] - 1, +p[2]);
+    if (prev && (dt - prev) / 864e5 === 1) run++; else run = 1;
+    best = Math.max(best, run); prev = dt;
+  });
+  return {cur: cur, best: best};
+}
+/* progrès du jour par routine (cases cochées) */
+function prog(rid){
+  var p = DB.progress[rid];
+  if (!p || p.date !== today()){ p = DB.progress[rid] = {date: today(), done: []}; }
+  return p;
+}
+
+/* ============ Sons, vibration, écran ============ */
+var ac = null;
+function audio(){ if (ac) return ac; try { var A = window.AudioContext || window.webkitAudioContext; if (A) ac = new A(); } catch(e){ ac = null; } return ac; }
+function beep(freq, dur, delay){
+  if (!ac || !DB.settings.sound) return;
+  try { var t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = freq; g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur + 0.03); } catch(e){}
+}
+function buzz(p){ if (!DB.settings.vibrate) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch(e){} }
+var sound = {
+  tick: function(){ beep(880, .09); },
+  go: function(){ beep(1320, .38); buzz(200); },
+  side: function(){ beep(990, .12); beep(990, .12, .2); buzz([120, 80, 120]); },
+  end: function(){ beep(660, .15); beep(880, .25, .18); buzz([150, 80, 150]); },
+  finish: function(){ beep(660, .15); beep(880, .15, .18); beep(1320, .45, .36); buzz([200, 100, 200, 100, 300]); }
+};
+var wl = null;
+function lockScreen(){ try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function(l){ wl = l; }).catch(function(){ wl = null; }); } catch(e){} }
+function unlockScreen(){ try { if (wl) wl.release(); } catch(e){} wl = null; }
+var toastT = 0;
+function toast(msg){ var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2200); }
+
+/* ============ Routeur ============ */
+var app = document.getElementById('app');
+var player = null;
+function go(hash){ location.hash = hash; }
+function route(){
+  var h = (location.hash || '#home').slice(1).split('/'), v = h[0], id = h[1];
+  if (player && v !== 'play'){ player.destroy(); player = null; }
+  document.querySelectorAll('.nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.nav === (v === 'play' || v === 'edit' ? 'home' : v)); });
+  if (v === 'play' && routine(id)) return renderPlay(id);
+  if (v === 'edit' && routine(id)) return renderEdit(id);
+  if (v === 'history') return renderHistory();
+  if (v === 'settings') return renderSettings();
+  renderHome();
+}
+window.addEventListener('hashchange', route);
+
+/* ============ Accueil ============ */
+function renderHome(){
+  var st = streaks(), m = daysDone(), t = today();
+  var letters = 'LMMJVSD', now = new Date(), dow = (now.getDay() + 6) % 7, week = '';
+  for (var k = 0; k < 7; k++){
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow + k), iso = isoLocal(d);
+    week += '<span class="day' + (m[iso] ? ' on' : '') + (iso === t ? ' today' : '') + '">' + letters[k] + '</span>';
+  }
+  var h = Math.floor(new Date().getHours());
+  var greet = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  app.innerHTML =
+    '<div class="view">' +
+    '<header class="hero"><p class="eyebrow">' + greet + ' · ' + new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'}) + '</p>' +
+    '<h1>Mobilité</h1>' +
+    '<div class="streak"><div class="stat"><b>' + st.cur + '</b><span>' + (st.cur > 1 ? 'jours de suite' : 'jour de suite') + '</span></div>' +
+    '<div class="stat"><b>' + st.best + '</b><span>record</span></div>' +
+    '<div class="stat"><b>' + DB.sessions.filter(function(s){ return s.date.slice(0, 7) === t.slice(0, 7); }).length + '</b><span>séances ce mois</span></div></div>' +
+    '<div class="week" aria-label="Cette semaine">' + week + '</div></header>' +
+    '<section class="rlist" id="rlist">' + DB.routines.map(function(r){
+      var p = prog(r.id), n = r.steps.filter(function(s){ return p.done.indexOf(s.id) >= 0; }).length, dt = doneToday(r.id);
+      return '<article class="rcard' + (dt ? ' done' : '') + '"><div style="min-width:0">' +
+        '<h3>' + esc(r.name) + '</h3><p class="meta">' + r.steps.length + ' étapes · ' + fmtLong(routineSec(r)) + (dt ? ' · <span class="chip">faite aujourd’hui</span>' : '') + '</p>' +
+        (r.note ? '<p class="meta">' + esc(r.note) + '</p>' : '') +
+        '<div class="strip" aria-hidden="true">' + r.steps.map(function(s){ return '<i class="' + (p.done.indexOf(s.id) >= 0 ? 'a' : '') + '"></i>'; }).join('') + '</div></div>' +
+        '<div class="acts"><a class="btn primary" href="#play/' + r.id + '">' + (n && n < r.steps.length ? 'Reprendre' : 'Lancer') + '</a>' +
+        '<a class="btn ghost sm" href="#edit/' + r.id + '">Modifier</a></div></article>';
+    }).join('') + '</section>' +
+    '<button type="button" class="btn" id="newR">+ Nouvelle routine</button>' +
+    '</div>';
+  document.getElementById('newR').addEventListener('click', function(){
+    var r = {id: uid(), name: 'Nouvelle routine', note: '', steps: []};
+    DB.routines.push(r); save(); go('#edit/' + r.id);
+  });
+}
+
+/* ============ Lecteur ============ */
+function renderPlay(rid){
+  var R = routine(rid), S = R.steps, LAST = S.length - 1, PREP = DB.settings.prep, C = 2 * Math.PI * 68;
+  if (!S.length){ app.innerHTML = '<div class="view"><p class="eyebrow">Routine vide</p><h1>' + esc(R.name) + '</h1><p>Ajoute des exercices pour pouvoir la lancer.</p><a class="btn primary" href="#edit/' + rid + '">Modifier</a></div>'; return; }
+  var P = prog(rid);
+  var ticks = '', nums = '';
+  for (var k = 0; k < 60; k++){
+    var a = k * Math.PI / 30, major = k % 5 === 0, r1 = major ? 100 : 106, r2 = 113;
+    ticks += '<line class="tick' + (major ? ' major' : '') + '" x1="' + (120 + r1 * Math.sin(a)).toFixed(1) + '" y1="' + (120 - r1 * Math.cos(a)).toFixed(1) + '" x2="' + (120 + r2 * Math.sin(a)).toFixed(1) + '" y2="' + (120 - r2 * Math.cos(a)).toFixed(1) + '"/>';
+    if (major) nums += '<text class="num" text-anchor="middle" dominant-baseline="central" x="' + (120 + 87 * Math.sin(a)).toFixed(1) + '" y="' + (120 - 87 * Math.cos(a)).toFixed(1) + '">' + (k || 60) + '</text>';
+  }
+  app.innerHTML =
+    '<div class="view">' +
+    '<div class="between"><a class="btn ghost sm" href="#home">← Routines</a><a class="btn ghost sm" href="#edit/' + rid + '">Modifier</a></div>' +
+    '<header><p class="eyebrow" id="eyebrow"></p><h1>' + esc(R.name) + '</h1></header>' +
+    '<section class="player" aria-label="Minuteur">' +
+      '<div class="dial-col"><div class="clock"><svg viewBox="0 0 240 240" aria-hidden="true">' +
+        '<circle class="face" cx="120" cy="120" r="118"/><circle class="rim" cx="120" cy="120" r="118"/>' + ticks + nums +
+        '<line id="hand" class="hand" x1="120" y1="120" x2="120" y2="12"/>' +
+        '<circle class="track" cx="120" cy="120" r="68"/><circle id="prog" class="prog" cx="120" cy="120" r="68" transform="rotate(-90 120 120)" stroke-dasharray="' + C.toFixed(2) + '" stroke-dashoffset="' + C.toFixed(2) + '"/>' +
+        '<circle class="disc" cx="120" cy="120" r="62"/></svg>' +
+        '<div class="readout"><span class="r-label" id="rLabel"></span><span class="r-time" id="rTime"></span><span class="r-side" id="rSide"></span></div></div>' +
+        '<div class="controls"><button type="button" class="icon" id="prevBtn" aria-label="Étape précédente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>' +
+        '<button type="button" class="btn primary big" id="playBtn" style="min-width:150px">Commencer</button>' +
+        '<button type="button" class="icon" id="nextBtn" aria-label="Étape suivante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button></div></div>' +
+      '<div class="now"><p class="eyebrow" id="nowMeta"></p><h2 id="nowName"></h2><p class="reps" id="nowReps"></p><div class="demo" id="demo"></div><ul class="cues" id="nowCues"></ul></div>' +
+      '<p class="sr" id="status" aria-live="polite"></p>' +
+    '</section>' +
+    '<section><div class="lane" id="lane">' + S.map(function(s){ return '<span class="bead" id="bead-' + s.id + '"></span>'; }).join('') + '</div>' +
+    '<div class="between muted" style="font-size:13px"><span id="laneCount"></span><button type="button" class="btn ghost sm" id="clearBtn">Tout décocher</button></div></section>' +
+    '<ol class="steps">' + S.map(function(s, k){
+      return '<li class="step" id="step-' + s.id + '"><label class="check"><input type="checkbox" id="chk-' + s.id + '" aria-label="Marquer ' + esc(s.name) + ' comme fait"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>' +
+        '<button type="button" class="step-main" data-k="' + k + '"><span class="step-title"><span class="idx">' + (k + 1) + '</span><span>' + esc(s.name) + '</span></span><span class="step-meta">' + esc(s.tool) + ' · ' + esc(s.reps) + '</span></button><span class="dur">' + fmt(s.sec) + '</span></li>';
+    }).join('') + '</ol>' +
+    '<button type="button" class="btn" id="markBtn">Marquer la séance comme faite</button>' +
+    '</div>';
+
+  var $ = function(id){ return document.getElementById(id); };
+  var i = 0, mode = 'idle', running = false, rem = 0, total = 0, clockSec = 0, last = 0, raf = 0, flashUntil = 0, nowKey = '', cache = {};
+  var reduced = false; try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch(e){}
+  function setText(id, v){ if (cache[id] !== v){ cache[id] = v; $(id).textContent = v; } }
+  function isDone(id){ return P.done.indexOf(id) >= 0; }
+  function setDone(id, v){ var d = P.done, k = d.indexOf(id); if (v && k < 0) d.push(id); if (!v && k >= 0) d.splice(k, 1); save(); renderList(); }
+  function remaining(){
+    var s = 0, k;
+    if (mode === 'done') return 0;
+    if (mode === 'idle'){ for (k = i; k <= LAST; k++) s += S[k].sec + PREP; return s; }
+    s = rem + (mode === 'prep' ? S[i].sec : 0);
+    for (k = i + 1; k <= LAST; k++) s += S[k].sec + PREP;
+    return s;
+  }
+  function announce(m){ $('status').textContent = m || (mode === 'prep' ? 'Prépare-toi : ' + S[i].name : mode === 'work' ? 'C’est parti : ' + S[i].name : mode === 'done' ? 'Routine terminée' : ''); }
+  function enter(m, k){ i = k; mode = m; rem = total = (m === 'prep' ? PREP : S[i].sec); announce(); }
+  function finishSession(){
+    var n = S.filter(function(s){ return isDone(s.id); }).length;
+    DB.sessions.push({date: today(), at: new Date().toISOString(), routine: rid, name: R.name, steps: n, total: S.length, minutes: Math.round(S.reduce(function(a, s){ return a + s.sec; }, 0) / 60)});
+    save();
+  }
+  function finishPhase(live){
+    if (mode === 'prep'){ enter('work', i); if (live) sound.go(); return; }
+    if (mode === 'work'){
+      var id = S[i].id;
+      if (i < LAST){ enter('prep', i + 1); if (live) sound.end(); }
+      else { mode = 'done'; running = false; rem = 0; if (live) sound.finish(); unlockScreen(); announce(); }
+      setDone(id, true);
+      if (mode === 'done'){ finishSession(); toast('Séance enregistrée'); }
+    }
+  }
+  function advance(dt, live){
+    var guard = 0;
+    while (dt > 0 && running && guard++ < 100){
+      var before = rem, step = Math.min(dt, rem); rem -= step; dt -= step;
+      if (live){
+        if (mode === 'prep'){ var cb = Math.ceil(before - 1e-6), ca = Math.ceil(rem - 1e-6); if (ca < cb && ca >= 1 && ca <= 3) sound.tick(); }
+        if (mode === 'work' && S[i].sides){ var half = total / 2; if (before > half && rem <= half){ sound.side(); flashUntil = clockSec + 2.5; announce('Change de côté'); } }
+      }
+      if (rem <= 1e-6){ rem = 0; finishPhase(live); }
+    }
+  }
+  function frame(t){
+    raf = 0; if (!running) return;
+    var dt = (t - last) / 1000; last = t; if (!(dt > 0)) dt = 0;
+    clockSec += dt; advance(dt, dt < 1.5); draw();
+    if (running) raf = requestAnimationFrame(frame);
+  }
+  function startLoop(){ last = performance.now(); if (!raf) raf = requestAnimationFrame(frame); }
+  function jump(k){ k = Math.max(0, Math.min(LAST, k)); if (running) enter('prep', k); else { i = k; mode = 'idle'; rem = 0; } draw(); renderList(); }
+  function renderNow(){
+    var s = S[i], key = i + '|' + (mode === 'done');
+    if (key === nowKey) return; nowKey = key;
+    var cues = $('nowCues'); cues.innerHTML = '';
+    if (mode === 'done'){ setText('nowName', 'Routine terminée'); setText('nowReps', S.length + ' étapes bouclées. Tes épaules te remercient.'); $('demo').hidden = true; return; }
+    setText('nowName', s.name); setText('nowReps', s.tool + ' · ' + s.reps);
+    (s.cues || []).forEach(function(c){ var li = document.createElement('li'); li.textContent = c; cues.appendChild(li); });
+    $('demo').hidden = (s.anim || 'none') === 'none'; $('demo').innerHTML = demoSVG(s.anim);
+  }
+  function draw(){
+    var s = S[i];
+    $('hand').setAttribute('transform', 'rotate(' + ((clockSec % 60) * 6).toFixed(2) + ' 120 120)');
+    var p = (mode === 'prep' || mode === 'work') ? (total ? 1 - rem / total : 0) : mode === 'done' ? 1 : 0;
+    var pr = $('prog'); pr.setAttribute('stroke-dashoffset', (C * (1 - p)).toFixed(2)); pr.style.opacity = p > 0.002 ? 1 : 0; pr.classList.toggle('prep', mode === 'prep');
+    var label, time, side = '', flash = false;
+    if (mode === 'idle'){ label = i === 0 ? 'Durée totale' : 'Il reste'; time = fmt(remaining()); var n = S.length - i; side = n + (n > 1 ? ' étapes' : ' étape'); }
+    else if (mode === 'prep'){ label = running ? 'Prépare-toi' : 'Pause'; time = fmt(rem); side = 'Installe-toi'; }
+    else if (mode === 'work'){ label = running ? 'C’est parti' : 'Pause'; time = fmt(rem); if (s.sides){ side = rem > total / 2 ? 'Côté 1 sur 2' : 'Côté 2 sur 2'; if (clockSec < flashUntil){ side = 'Change de côté'; flash = true; } } }
+    else { label = 'Routine faite'; time = 'Bravo'; side = 'À demain'; }
+    setText('rLabel', label); setText('rTime', time); setText('rSide', side); $('rSide').classList.toggle('flash', flash);
+    setText('nowMeta', mode === 'done' ? 'Terminé · ' + S.length + ' / ' + S.length : 'Étape ' + (i + 1) + ' / ' + S.length + ' · reste ' + Math.max(1, Math.ceil(remaining() / 60)) + ' min');
+    setText('eyebrow', S.length + ' étapes · ≈ ' + Math.round(routineSec(R) / 60) + ' min');
+    renderNow();
+    setText('playBtn', mode === 'done' ? 'Recommencer' : mode === 'idle' ? (i === 0 ? 'Commencer' : 'Démarrer') : running ? 'Pause' : 'Reprendre');
+    $('prevBtn').disabled = mode === 'done' || i === 0; $('nextBtn').disabled = mode === 'done' || i === LAST;
+  }
+  function renderList(){
+    var n = 0;
+    S.forEach(function(s, k){
+      var d = isDone(s.id); if (d) n++;
+      $('step-' + s.id).classList.toggle('done', d); $('step-' + s.id).classList.toggle('cur', k === i && mode !== 'done');
+      $('chk-' + s.id).checked = d;
+      $('bead-' + s.id).classList.toggle('done', d); $('bead-' + s.id).classList.toggle('cur', k === i && mode !== 'done');
+    });
+    $('laneCount').textContent = n + ' / ' + S.length + ' étapes';
+  }
+  S.forEach(function(s){ $('chk-' + s.id).addEventListener('change', function(e){ setDone(s.id, e.target.checked); }); });
+  app.querySelectorAll('.step-main').forEach(function(b){ b.addEventListener('click', function(){ if (mode === 'done') mode = 'idle'; jump(+b.dataset.k); try { document.querySelector('.player').scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'start'}); } catch(e){} }); });
+  $('playBtn').addEventListener('click', function(){
+    var a = audio(); if (a && a.state === 'suspended'){ try { a.resume(); } catch(e){} }
+    if (mode === 'done'){ P.done = []; save(); running = false; mode = 'idle'; rem = 0; i = 0; nowKey = ''; $('demo').hidden = false; draw(); renderList(); return; }
+    if (mode === 'idle'){ enter('prep', i); running = true; lockScreen(); startLoop(); draw(); renderList(); return; }
+    running = !running; if (running){ lockScreen(); startLoop(); } else unlockScreen(); draw();
+  });
+  $('nextBtn').addEventListener('click', function(){ if (mode !== 'done' && i < LAST) jump(i + 1); });
+  $('prevBtn').addEventListener('click', function(){ if (mode !== 'done' && i > 0) jump(i - 1); });
+  $('clearBtn').addEventListener('click', function(){ P.done = []; save(); if (!running){ i = 0; mode = 'idle'; rem = 0; } renderList(); draw(); });
+  $('markBtn').addEventListener('click', function(){ S.forEach(function(s){ if (!isDone(s.id)) P.done.push(s.id); }); finishSession(); running = false; mode = 'done'; unlockScreen(); draw(); renderList(); toast('Séance enregistrée'); });
+  function onVis(){ if (document.visibilityState === 'visible' && running) lockScreen(); }
+  document.addEventListener('visibilitychange', onVis);
+  player = {destroy: function(){ running = false; if (raf) cancelAnimationFrame(raf); unlockScreen(); document.removeEventListener('visibilitychange', onVis); }};
+
+  var first = -1; for (var q = 0; q <= LAST; q++){ if (!isDone(S[q].id)){ first = q; break; } }
+  if (first < 0){ mode = 'done'; i = LAST; } else i = first;
+  draw(); renderList();
+}
+
+/* ============ Éditeur ============ */
+function renderEdit(rid){
+  var R = routine(rid);
+  function stepCard(s, k){
+    return '<details class="ecard" id="ec-' + s.id + '"' + (s._open ? ' open' : '') + '>' +
+      '<summary><div class="head"><span class="idx">' + (k + 1) + '</span><div style="min-width:0"><div style="font-weight:600;color:var(--ink)">' + esc(s.name || 'Sans nom') + '</div><div class="muted" style="font-size:13px;font-weight:400">' + esc(s.tool) + ' · ' + fmt(s.sec) + (s.sides ? ' · 2 côtés' : '') + '</div></div>' +
+      '<div class="demo sm">' + demoSVG(s.anim) + '</div></div></summary>' +
+      '<div class="grid2"><div class="field"><label for="n-' + s.id + '">Nom</label><input class="in" id="n-' + s.id + '" data-f="name" value="' + esc(s.name) + '"></div>' +
+      '<div class="field"><label for="t-' + s.id + '">Matériel / position</label><input class="in" id="t-' + s.id + '" data-f="tool" value="' + esc(s.tool) + '"></div></div>' +
+      '<div class="grid2"><div class="field"><label for="d-' + s.id + '">Durée (secondes)</label><div class="stepper"><button type="button" class="icon sm" data-dur="-15" aria-label="Moins 15 secondes">−</button><input class="in" type="number" min="10" step="5" id="d-' + s.id + '" data-f="sec" value="' + s.sec + '"><button type="button" class="icon sm" data-dur="15" aria-label="Plus 15 secondes">+</button></div></div>' +
+      '<div class="field"><label for="r-' + s.id + '">Répétitions (texte)</label><input class="in" id="r-' + s.id + '" data-f="reps" value="' + esc(s.reps) + '"></div></div>' +
+      '<label class="toggle"><input type="checkbox" data-f="sides"' + (s.sides ? ' checked' : '') + '><span class="tk"></span><span>Deux côtés (bip à mi-temps)</span></label>' +
+      '<div class="field"><label for="c-' + s.id + '">Consignes (une par ligne)</label><textarea class="in" id="c-' + s.id + '" data-f="cues">' + esc((s.cues || []).join('\n')) + '</textarea></div>' +
+      '<div class="field"><label>Visuel</label><div class="animpick">' + Object.keys(FIG).map(function(a){ return '<button type="button" data-anim="' + a + '" class="' + ((s.anim || 'none') === a ? 'on' : '') + '"><div class="demo">' + demoSVG(a) + '</div>' + FIG[a].label + '</button>'; }).join('') + '</div></div>' +
+      '<div class="row"><button type="button" class="icon sm" data-move="-1" aria-label="Monter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>' +
+      '<button type="button" class="icon sm" data-move="1" aria-label="Descendre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>' +
+      '<span style="flex:1"></span><button type="button" class="btn sm danger" data-del="1">Retirer</button></div></details>';
+  }
+  app.innerHTML =
+    '<div class="view">' +
+    '<div class="between"><a class="btn ghost sm" href="#home">← Routines</a><a class="btn primary sm" href="#play/' + rid + '">Lancer</a></div>' +
+    '<header><p class="eyebrow">Modifier</p><h1 id="title">' + esc(R.name) + '</h1></header>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:12px"><div class="field"><label for="rname">Nom de la routine</label><input class="in" id="rname" value="' + esc(R.name) + '"></div>' +
+    '<div class="field"><label for="rnote">Note (facultatif)</label><input class="in" id="rnote" value="' + esc(R.note || '') + '"></div>' +
+    '<p class="muted" style="font-size:14px" id="rsum"></p></div>' +
+    '<h2>Exercices</h2><div id="elist" style="display:flex;flex-direction:column;gap:10px"></div>' +
+    '<div class="row"><button type="button" class="btn primary" id="addLib">+ Depuis la bibliothèque</button><button type="button" class="btn" id="addBlank">+ Exercice vierge</button></div>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><h3>Routine</h3><div class="row"><button type="button" class="btn sm" id="dup">Dupliquer</button><button type="button" class="btn sm danger" id="del">Supprimer la routine</button></div><div class="confirm" id="delC" hidden><span>Supprimer « ' + esc(R.name) + ' » et son historique de progression du jour ?</span><button type="button" class="btn sm danger" id="delY">Oui, supprimer</button><button type="button" class="btn sm" id="delN">Annuler</button></div></div>' +
+    '</div>';
+  var $ = function(id){ return document.getElementById(id); };
+  function sum(){ $('rsum').textContent = R.steps.length + ' exercices · ' + fmtLong(routineSec(R)) + ' avec les temps de préparation'; }
+  function list(){
+    $('elist').innerHTML = R.steps.map(stepCard).join('') || '<p class="muted">Aucun exercice pour l’instant.</p>';
+    R.steps.forEach(function(s, k){
+      var el = $('ec-' + s.id);
+      el.addEventListener('toggle', function(){ s._open = el.open; });
+      el.querySelectorAll('[data-f]').forEach(function(inp){
+        inp.addEventListener('input', function(){
+          var f = inp.dataset.f;
+          if (f === 'sec') s.sec = Math.max(10, parseInt(inp.value, 10) || 10);
+          else if (f === 'sides') s.sides = inp.checked;
+          else if (f === 'cues') s.cues = inp.value.split('\n').map(function(x){ return x.trim(); }).filter(Boolean);
+          else s[f] = inp.value;
+          save(); sum();
+          if (f === 'name' || f === 'tool' || f === 'sec' || f === 'sides'){ var h = el.querySelector('summary .head'); h.children[1].children[0].textContent = s.name || 'Sans nom'; h.children[1].children[1].textContent = s.tool + ' · ' + fmt(s.sec) + (s.sides ? ' · 2 côtés' : ''); }
+        });
+      });
+      el.querySelectorAll('[data-dur]').forEach(function(b){ b.addEventListener('click', function(){ s.sec = Math.max(10, s.sec + (+b.dataset.dur)); el.querySelector('[data-f="sec"]').value = s.sec; save(); sum(); el.querySelector('summary .head').children[1].children[1].textContent = s.tool + ' · ' + fmt(s.sec) + (s.sides ? ' · 2 côtés' : ''); }); });
+      el.querySelectorAll('[data-anim]').forEach(function(b){ b.addEventListener('click', function(){ s.anim = b.dataset.anim; save(); el.querySelectorAll('[data-anim]').forEach(function(x){ x.classList.toggle('on', x === b); }); el.querySelector('summary .demo').innerHTML = demoSVG(s.anim); }); });
+      el.querySelectorAll('[data-move]').forEach(function(b){ b.addEventListener('click', function(){ var j = k + (+b.dataset.move); if (j < 0 || j >= R.steps.length) return; R.steps.splice(k, 1); R.steps.splice(j, 0, s); save(); list(); }); });
+      el.querySelector('[data-del]').addEventListener('click', function(){ R.steps.splice(k, 1); save(); list(); sum(); toast('Exercice retiré'); });
+    });
+    sum();
+  }
+  list();
+  $('rname').addEventListener('input', function(){ R.name = $('rname').value; $('title').textContent = R.name; save(); });
+  $('rnote').addEventListener('input', function(){ R.note = $('rnote').value; save(); });
+  $('addBlank').addEventListener('click', function(){ R.steps.push({id: uid(), name: 'Nouvel exercice', tool: 'Sol', sec: 60, sides: false, reps: '', cues: [], anim: 'none', _open: true}); save(); list(); window.scrollTo(0, document.body.scrollHeight); });
+  $('addLib').addEventListener('click', function(){
+    var sh = document.createElement('div'); sh.className = 'sheet';
+    sh.innerHTML = '<div class="sheet-in"><div class="between"><h2>Bibliothèque</h2><button type="button" class="btn ghost sm" id="shClose">Fermer</button></div><div class="lib">' +
+      LIB.map(function(l, k){ return '<button type="button" data-k="' + k + '"><div class="demo">' + demoSVG(l.anim) + '</div><div style="min-width:0"><div style="font-weight:600">' + esc(l.name) + '</div><div class="muted" style="font-size:13px">' + esc(l.tool) + ' · ' + fmt(l.sec) + ' · ' + esc(l.reps) + '</div></div><span class="chip">+</span></button>'; }).join('') + '</div></div>';
+    document.body.appendChild(sh);
+    sh.addEventListener('click', function(e){ if (e.target === sh) sh.remove(); });
+    sh.querySelector('#shClose').addEventListener('click', function(){ sh.remove(); });
+    sh.querySelectorAll('[data-k]').forEach(function(b){ b.addEventListener('click', function(){ var s = JSON.parse(JSON.stringify(LIB[+b.dataset.k])); s.id = uid(); R.steps.push(s); save(); list(); toast(s.name + ' ajouté'); }); });
+  });
+  $('dup').addEventListener('click', function(){ var c = JSON.parse(JSON.stringify(R)); c.id = uid(); c.name = R.name + ' (copie)'; c.steps.forEach(function(s){ s.id = uid(); delete s._open; }); DB.routines.push(c); save(); go('#edit/' + c.id); });
+  $('del').addEventListener('click', function(){ $('delC').hidden = false; });
+  $('delN').addEventListener('click', function(){ $('delC').hidden = true; });
+  $('delY').addEventListener('click', function(){ DB.routines = DB.routines.filter(function(r){ return r.id !== rid; }); delete DB.progress[rid]; if (!DB.routines.length) DB.routines = defaultRoutines(); save(); go('#home'); toast('Routine supprimée'); });
+}
+
+/* ============ Historique ============ */
+var calMonth = null, calSel = null;
+function renderHistory(){
+  var now = new Date(); if (!calMonth) calMonth = new Date(now.getFullYear(), now.getMonth(), 1); if (!calSel) calSel = today();
+  var st = streaks(), m = daysDone(), t = today(), ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+  var monthSess = DB.sessions.filter(function(s){ return s.date.slice(0, 7) === ym; });
+  var mins = monthSess.reduce(function(a, s){ return a + (s.minutes || 0); }, 0);
+  var first = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1), off = (first.getDay() + 6) % 7, nd = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0).getDate();
+  var cells = ['L','M','M','J','V','S','D'].map(function(x){ return '<span class="h">' + x + '</span>'; }).join('');
+  for (var k = 0; k < off; k++) cells += '<span></span>';
+  for (var d = 1; d <= nd; d++){
+    var iso = ym + '-' + String(d).padStart(2, '0'), fut = iso > t;
+    cells += '<button type="button" data-d="' + iso + '" class="' + (m[iso] ? 'on' : '') + (iso === t ? ' today' : '') + (iso === calSel ? ' sel' : '') + (fut ? ' off' : '') + '"' + (fut ? ' disabled' : '') + ' aria-label="' + d + (m[iso] ? ', routine faite' : '') + '">' + d + '</button>';
+  }
+  var sel = DB.sessions.filter(function(s){ return s.date === calSel; }).sort(function(a, b){ return a.at < b.at ? 1 : -1; });
+  var selDate = new Date(+calSel.slice(0, 4), +calSel.slice(5, 7) - 1, +calSel.slice(8, 10));
+  app.innerHTML =
+    '<div class="view"><header><p class="eyebrow">Historique</p><h1>Tes séances</h1></header>' +
+    '<div class="tiles"><div class="stat"><b>' + st.cur + '</b><span>jours de suite</span></div><div class="stat"><b>' + st.best + '</b><span>record</span></div>' +
+    '<div class="stat"><b>' + Object.keys(m).filter(function(x){ return x.slice(0, 7) === ym; }).length + '</b><span>jours ce mois</span></div><div class="stat"><b>' + mins + '</b><span>min ce mois</span></div></div>' +
+    '<section class="cal"><div class="between"><button type="button" class="icon sm" id="pm" aria-label="Mois précédent">‹</button><h3>' + calMonth.toLocaleDateString('fr-FR', {month:'long', year:'numeric'}) + '</h3><button type="button" class="icon sm" id="nm" aria-label="Mois suivant">›</button></div><div class="cal-grid">' + cells + '</div></section>' +
+    '<section class="sess"><h3>' + selDate.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'}) + '</h3>' +
+    (sel.length ? sel.map(function(s, k){ return '<div class="card"><div style="min-width:0"><div style="font-weight:600">' + esc(s.name) + '</div><div class="muted" style="font-size:13px">' + new Date(s.at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) + ' · ' + s.steps + '/' + s.total + ' étapes · ' + s.minutes + ' min</div></div><button type="button" class="btn ghost sm" data-rm="' + s.at + '">Retirer</button></div>'; }).join('') : '<p class="muted">Aucune séance ce jour-là.</p>') +
+    (calSel <= t && !sel.length ? '<button type="button" class="btn" id="addPast">Ajouter une séance faite ce jour</button>' : '') +
+    '</section></div>';
+  document.getElementById('pm').addEventListener('click', function(){ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1); renderHistory(); });
+  document.getElementById('nm').addEventListener('click', function(){ calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1); renderHistory(); });
+  app.querySelectorAll('[data-d]').forEach(function(b){ b.addEventListener('click', function(){ calSel = b.dataset.d; renderHistory(); }); });
+  app.querySelectorAll('[data-rm]').forEach(function(b){ b.addEventListener('click', function(){ DB.sessions = DB.sessions.filter(function(s){ return s.at !== b.dataset.rm; }); save(); renderHistory(); }); });
+  var ap = document.getElementById('addPast');
+  if (ap) ap.addEventListener('click', function(){ var r = DB.routines[0]; DB.sessions.push({date: calSel, at: calSel + 'T08:00:00', routine: r.id, name: r.name, steps: r.steps.length, total: r.steps.length, minutes: Math.round(r.steps.reduce(function(a, s){ return a + s.sec; }, 0) / 60)}); save(); renderHistory(); });
+}
+
+/* ============ Réglages ============ */
+var deferredInstall = null;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredInstall = e; });
+function renderSettings(){
+  var standalone = false; try { standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch(e){}
+  app.innerHTML =
+    '<div class="view"><header><p class="eyebrow">Réglages</p><h1>L’app</h1></header>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:14px"><h3>Minuteur</h3>' +
+    '<div class="field"><label for="prep">Temps d’installation avant chaque exercice (secondes)</label><div class="stepper"><button type="button" class="icon sm" id="pm" aria-label="Moins">−</button><input class="in" type="number" id="prep" min="0" max="30" value="' + DB.settings.prep + '"><button type="button" class="icon sm" id="pp" aria-label="Plus">+</button></div></div>' +
+    '<label class="toggle"><input type="checkbox" id="snd"' + (DB.settings.sound ? ' checked' : '') + '><span class="tk"></span><span>Bips sonores</span></label>' +
+    '<label class="toggle"><input type="checkbox" id="vib"' + (DB.settings.vibrate ? ' checked' : '') + '><span class="tk"></span><span>Vibrations</span></label></div>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><h3>Installation</h3>' +
+    (standalone ? '<p class="muted">L’app est installée sur cet appareil.</p>' : '<p class="muted" style="font-size:14px">Sur Android (Chrome) : menu ⋮ → « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p><button type="button" class="btn primary" id="inst"' + (deferredInstall ? '' : ' hidden') + '>Installer sur ce téléphone</button>') + '</div>' +
+    '<div class="card" style="display:flex;flex-direction:column;gap:10px"><h3>Sauvegarde</h3><p class="muted" style="font-size:14px">Tes routines et ton historique sont enregistrés uniquement sur ce téléphone. Exporte un fichier de temps en temps.</p>' +
+    '<div class="row"><button type="button" class="btn" id="exp">Exporter (fichier .json)</button><label class="btn" for="impF">Importer<input type="file" id="impF" accept="application/json,.json" class="sr"></label></div>' +
+    '<div class="row"><button type="button" class="btn sm danger" id="reset">Remettre les routines par défaut</button></div><div class="confirm" id="resetC" hidden><span>Remplacer tes routines par celles d’origine ? L’historique est conservé.</span><button type="button" class="btn sm danger" id="resetY">Oui</button><button type="button" class="btn sm" id="resetN">Annuler</button></div></div>' +
+    '<p class="muted" style="font-size:13px">Mobilité · version ' + VERSION + ' · Rien ne doit pincer. Douleur vive ou persistante : kiné du sport.</p></div>';
+  var $ = function(id){ return document.getElementById(id); };
+  function setPrep(v){ DB.settings.prep = Math.max(0, Math.min(30, v | 0)); $('prep').value = DB.settings.prep; save(); }
+  $('prep').addEventListener('input', function(){ setPrep(parseInt($('prep').value, 10) || 0); });
+  $('pm').addEventListener('click', function(){ setPrep(DB.settings.prep - 1); }); $('pp').addEventListener('click', function(){ setPrep(DB.settings.prep + 1); });
+  $('snd').addEventListener('change', function(){ DB.settings.sound = $('snd').checked; save(); if (DB.settings.sound){ audio(); sound.tick(); } });
+  $('vib').addEventListener('change', function(){ DB.settings.vibrate = $('vib').checked; save(); buzz(80); });
+  var inst = $('inst'); if (inst) inst.addEventListener('click', function(){ if (!deferredInstall) return; deferredInstall.prompt(); deferredInstall.userChoice.then(function(){ deferredInstall = null; renderSettings(); }); });
+  $('exp').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(DB, null, 1)], {type: 'application/json'}), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'mobilite-' + today() + '.json'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  });
+  $('impF').addEventListener('change', function(e){
+    var f = e.target.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function(){ try { var d = JSON.parse(rd.result); if (!d || !Array.isArray(d.routines)) throw 0; DB = d; DB.sessions = DB.sessions || []; DB.settings = Object.assign({prep: 8, sound: true, vibrate: true}, DB.settings || {}); DB.progress = DB.progress || {}; save(); toast('Sauvegarde importée'); renderSettings(); } catch(err){ toast('Fichier non reconnu'); } };
+    rd.readAsText(f);
+  });
+  $('reset').addEventListener('click', function(){ $('resetC').hidden = false; });
+  $('resetN').addEventListener('click', function(){ $('resetC').hidden = true; });
+  $('resetY').addEventListener('click', function(){ DB.routines = defaultRoutines(); DB.progress = {}; save(); toast('Routines remises à zéro'); renderSettings(); });
+}
+
+/* ============ Démarrage ============ */
+route();
+if ('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>
